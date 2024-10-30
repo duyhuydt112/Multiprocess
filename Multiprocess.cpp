@@ -3,7 +3,28 @@
 #include <sys/shm.h>
 #include <unistd.h> 
 #include <sys/wait.h>   // Để sử dụng wait()
+#include <thread>
+#include <chrono>
 using namespace std; 
+
+void Thread_Function(int Tid, int* &value){
+    if(!Tid){
+        while(1){
+            value[0] += 2; 
+            cout << "Dad Thread 1 ("<< getpid() << "): " << value[0] << endl;
+            sleep(1);
+        } 
+        
+    }
+    else 
+        while(1){
+            value[0] += 10; 
+            cout << "Dad Thread 2 ("<< getpid() << "): " <<value[0] << endl;
+            sleep(1);
+        }
+    
+}
+
 
 void Clarifition(int mode){
     key_t key = ftok("NHA", 29);
@@ -12,24 +33,21 @@ void Clarifition(int mode){
     if(mode == 1){
         Value[0] = 10;
         cout << "Initial: " << Value[0] << endl; 
-        while(1){
-            cout << "Dad: " << Value[0] << endl; 
-            // sleep(1);
-        }
-        
-        // shmdt(Value);
-        // shmctl(shmid, IPC_RMID, NULL);
+        thread Plus1(Thread_Function, 0, ref(Value));
+        thread Plus2(Thread_Function, 1, ref(Value));
+        Plus1.join();
+        Plus2.join();
+        shmdt(Value);
+        shmctl(shmid, IPC_RMID, NULL);
 
     }
     else{
-        
         while(1){
-            Value[0] += 10;
-            cout << "Child: " << Value[0] << endl; 
-            // sleep(1);
+            // Value[0] += 10;
+            cout << "Child ("<< getpid() << "): " <<Value[0] << endl; 
+            sleep(1);
         }
-
-        // shmdt(Value);
+        shmdt(Value);
     }
 }
 
