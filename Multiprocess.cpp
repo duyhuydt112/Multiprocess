@@ -5,26 +5,20 @@
 #include <sys/wait.h>   // Để sử dụng wait()
 #include <thread>
 #include <chrono>
+#include <mutex>
 using namespace std; 
 
-void Thread_Function(int Tid, int* &value){
-    if(!Tid){
-        while(1){
-            value[0] += 2; 
-            cout << "Dad Thread 1 ("<< getpid() << "): " << value[0] << endl;
-            sleep(1);
-        } 
-        
-    }
-    else 
-        while(1){
-            value[0] += 10; 
-            cout << "Dad Thread 2 ("<< getpid() << "): " <<value[0] << endl;
-            sleep(1);
-        }
-    
-}
+mutex mtx;
 
+void Thread_Function(int index, int* &value){
+
+    while(1){
+        std::lock_guard<std::mutex> lock(mtx);
+        value[0] += 2; 
+        cout << "Dad Thread " << index << " ("<< getpid() << "): " << value[0] << endl;
+        this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
 
 void Clarifition(int mode){
     key_t key = ftok("NHA", 29);
@@ -35,8 +29,12 @@ void Clarifition(int mode){
         cout << "Initial: " << Value[0] << endl; 
         thread Plus1(Thread_Function, 0, ref(Value));
         thread Plus2(Thread_Function, 1, ref(Value));
+        thread Plus3(Thread_Function, 2, ref(Value));
+        thread Plus4(Thread_Function, 3, ref(Value));
         Plus1.join();
         Plus2.join();
+        Plus3.join();
+        Plus4.join();
         shmdt(Value);
         shmctl(shmid, IPC_RMID, NULL);
 
@@ -50,6 +48,7 @@ void Clarifition(int mode){
         shmdt(Value);
     }
 }
+
 
 
 int main() 
